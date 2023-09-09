@@ -148,26 +148,36 @@ class SupervisedDataset(Dataset):
 
 
 def train():
+    # 使用transformers库的HfArgumentParser创建一个参数解析器
     parser = transformers.HfArgumentParser(
         (ModelArguments, DataArguments, TrainingArguments)
     )
+    
+    # 解析命令行参数并将它们分别分配给model_args, data_args, 和 training_args
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    # 加载预训练的因果语言模型（Causal Language Model）
     model = transformers.AutoModelForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
+        model_args.model_name_or_path,  # 从model_args获取模型名称或路径
         trust_remote_code=True,
         cache_dir=training_args.cache_dir,
     )
+    
+    # 加载预训练的分词器
     tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_args.model_name_or_path,
+        model_args.model_name_or_path,  # 同样地，从model_args获取模型名称或路径
         use_fast=False,
         trust_remote_code=True,
         model_max_length=training_args.model_max_length,
         cache_dir=training_args.cache_dir,
     )
+    
+    # 检查training_args是否有use_lora标志设置为True
     if training_args.use_lora:
+        # 如果上述条件为真，导入与LoRA (Layer-wise Recomputation) 相关的模块
         from peft import LoraConfig, TaskType, get_peft_model
 
+        # 配置LoRA
         peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             target_modules=["W_pack"],
@@ -176,20 +186,37 @@ def train():
             lora_alpha=32,
             lora_dropout=0.1,
         )
+        
+        # 在模型中启用输入的梯度计算
         model.enable_input_require_grads()
+        
+        # 获取与LoRA相关的模型
         model = get_peft_model(model, peft_config)
+        
+        # 打印模型中的可训练参数
         model.print_trainable_parameters()
 
+    # 创建一个有监督的数据集
     dataset = SupervisedDataset(
         data_args.data_path, tokenizer, training_args.model_max_length
     )
+    
+    # 创建一个训练器
     trainer = transformers.Trainer(
         model=model, args=training_args, train_dataset=dataset, tokenizer=tokenizer
     )
+    
+    # 开始训练模型
     trainer.train()
+    
+    # 保存训练器的状态
     trainer.save_state()
+    
+    # 将训练好的模型保存到指定的目录
     trainer.save_model(output_dir=training_args.output_dir)
 
-
+# Python的标准模式，确保代码作为主程序运行时才执行下面的内容
 if __name__ == "__main__":
+    # 调用上面定义的train函数，开始训练过程
     train()
+
