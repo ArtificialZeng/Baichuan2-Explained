@@ -31,10 +31,10 @@ ChatGLM Efficient Tuning源码解析train_sft.py   https://zengxiaojian.blog.csd
 ## 引用 - 源项目
 
 ```bibtex
-@Misc{chatglm-efficient-tuning,
-  title = {ChatGLM Efficient Tuning},
-  author = {hiyouga},
-  howpublished = {\url{https://github.com/hiyouga/ChatGLM-Efficient-Tuning}},
+@Misc{Baichuan2,
+  title = {Baichuan2},
+  author = {Baichuan2},
+  howpublished = {\url{https://github.com/baichuan-inc/Baichuan2}},
   year = {2023}
 }
 ```
