@@ -14,7 +14,7 @@ Baichuan2代码的逐行解析版本，适合小白
     * [data_collator.py（DataCollatorForChatGLM类）](./src/utils/data_collator.py)
     * [seq2seq.py  （ComputeMetrics、Seq2SeqTrainerForChatGLM)](./src/utils/seq2seq.py)
   * [train_sft.py（导入DataCollatorForChatGLM、Seq2SeqTrainerForChatGLM)](./src/train_sft.py)
-* [examples/](./examples)
+* [web_demo.py/](./web_demo.py)
   * [ads_generation.md（分布式运行范例）](./examples/ads_generation.md)
 * [README.md](./README.md)
 
