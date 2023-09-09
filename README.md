@@ -10,6 +10,7 @@ Baichuan2代码的逐行解析版本，适合小白
     * class DataArguments : const data_path
     * class TrainingArguments ： const cache_dir、const optim、const model_max_length、 const use_lora、
     * class SupervisedDataset
+  * func train 
 * [web_demo.py/](./web_demo.py)
   * [ads_generation.md（分布式运行范例）](./examples/ads_generation.md)
 * [README.md](./README.md)
