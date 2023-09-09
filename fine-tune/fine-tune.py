@@ -64,43 +64,69 @@ class SupervisedDataset(Dataset):
             labels.append(id_)
         print("label:", self.tokenizer.decode(labels))
 
+    # 定义魔法方法，返回数据集的大小。
     def __len__(self):
         return len(self.data)
 
+    # 定义预处理方法，对单个示例进行预处理。
     def preprocessing(self, example):
+        # 初始化输入ID的空列表。
         input_ids = []
+        # 初始化标签的空列表。
         labels = []
 
+        # 遍历每个对话中的消息。
         for message in example["conversations"]:
+            # 获取消息的发送者。
             from_ = message["from"]
+            # 获取消息的内容。
             value = message["value"]
+            # 使用tokenizer对消息内容进行编码。
             value_ids = self.tokenizer.encode(value)
 
+            # 如果消息来自人类用户。
             if from_ == "human":
+                # 在输入ID中添加用户特定的token和消息token。
                 input_ids += self.user_tokens + value_ids
+                # 在标签中添加结束符和忽略标签。
                 labels += [self.tokenizer.eos_token_id] + [self.ignore_index] * len(
                     value_ids
                 )
             else:
+                # 如果消息来自助手，添加助手特定的token和消息token。
                 input_ids += self.assistant_tokens + value_ids
+                # 在标签中添加忽略标签和消息token。
                 labels += [self.ignore_index] + value_ids
+
+        # 在输入ID和标签的末尾都追加结束符token。
         input_ids.append(self.tokenizer.eos_token_id)
         labels.append(self.tokenizer.eos_token_id)
+
+        # 对输入ID和标签进行截断。
         input_ids = input_ids[: self.model_max_length]
         labels = labels[: self.model_max_length]
+
+        # 为输入ID和标签填充token。
         input_ids += [self.tokenizer.pad_token_id] * (
             self.model_max_length - len(input_ids)
         )
         labels += [self.ignore_index] * (self.model_max_length - len(labels))
+
+        # 转换输入ID和标签为PyTorch的LongTensor。
         input_ids = torch.LongTensor(input_ids)
         labels = torch.LongTensor(labels)
+
+        # 创建注意力掩码。
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id)
+
+        # 返回预处理后的结果。
         return {
             "input_ids": input_ids,
             "labels": labels,
             "attention_mask": attention_mask,
         }
 
+    # 定义魔法方法，允许使用索引从数据集中获取示例。
     def __getitem__(self, idx) -> Dict[str, torch.Tensor]:
         return self.preprocessing(self.data[idx])
 
