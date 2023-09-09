@@ -11,34 +11,45 @@ import transformers
 from transformers.training_args import TrainingArguments
 
 
+# @dataclass 是一个Python装饰器，用于自动生成初始化、比较等特殊方法。它使得数据类定义变得简洁。
 @dataclass
+# 这行定义了一个名为 `ModelArguments` 的类。
 class ModelArguments:
+    # 定义了一个可选的字符串类型的类属性 `model_name_or_path`，其默认值为 `"baichuan-inc/Baichuan2-7B-Base"`。
     model_name_or_path: Optional[str] = field(default="baichuan-inc/Baichuan2-7B-Base")
 
-
+# 同第一行，用于自动生成特殊方法。
 @dataclass
+# 定义了一个名为 `DataArguments` 的类。
 class DataArguments:
+    # 定义了一个字符串类型的类属性 `data_path`，其默认值为 `None`。还为该字段添加了一些元数据描述。
     data_path: str = field(
         default=None, metadata={"help": "Path to the training data."}
     )
 
-
+# 同上，用于自动生成特殊方法。
 @dataclass
+# 定义了一个名为 `TrainingArguments` 的类，该类继承自 `transformers.TrainingArguments`。
 class TrainingArguments(transformers.TrainingArguments):
+    # 定义了一个可选的字符串类型的类属性 `cache_dir`，其默认值为 `None`。
     cache_dir: Optional[str] = field(default=None)
+    # 定义了一个字符串类型的类属性 `optim`，其默认值为 `"adamw_torch"`。
     optim: str = field(default="adamw_torch")
+    # 定义了一个整型属性 `model_max_length`，其默认值为 `512`，并为它提供了描述。
     model_max_length: int = field(
         default=512,
         metadata={
             "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
         },
     )
+    # 定义了一个布尔值属性 `use_lora`，默认为 `False`。
     use_lora: bool = field(default=False)
 
-
+# 定义了一个名为 `SupervisedDataset` 的类，继承自 `Dataset` 类。
 class SupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
 
+    # 定义了 `SupervisedDataset` 类的初始化方法，并接收一系列参数。
     def __init__(
         self,
         data_path,
@@ -47,16 +58,21 @@ class SupervisedDataset(Dataset):
         user_tokens=[195],
         assistant_tokens=[196],
     ):
+        # 调用父类（Dataset）的初始化方法。
         super(SupervisedDataset, self).__init__()
+        # 读取由 `data_path` 参数指定的JSON文件，并将其内容赋值给 `self.data`。
         self.data = json.load(open(data_path))
+        # 这几行将传入的参数赋值给相应的类属性。
         self.tokenizer = tokenizer
         self.model_max_length = model_max_length
         self.user_tokens = user_tokens
         self.assistant_tokens = assistant_tokens
         self.ignore_index = -100
+        # 对第一个数据进行预处理，并打印它的输入。
         item = self.preprocessing(self.data[0])
         print("input:", self.tokenizer.decode(item["input_ids"]))
         labels = []
+        # 对预处理后的标签进行解码，并打印解码后的内容。
         for id_ in item["labels"]:
             if id_ == -100:
                 continue
