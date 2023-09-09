@@ -4,16 +4,12 @@ Baichuan2代码的逐行解析版本，适合小白
 
 
 
-* [src/](./src)
-  * [utils/](./src/utils)
-    * [common.py](./src/utils/common.py)
-      * init_adapter（）
-      * load_pretrained()
-      * prepare_args()
-    * [peft_trainer.py  （定义LogCallback、PeftTrainer）](./src/utils/peft_trainer.py)
-    * [data_collator.py（DataCollatorForChatGLM类）](./src/utils/data_collator.py)
-    * [seq2seq.py  （ComputeMetrics、Seq2SeqTrainerForChatGLM)](./src/utils/seq2seq.py)
-  * [train_sft.py（导入DataCollatorForChatGLM、Seq2SeqTrainerForChatGLM)](./src/train_sft.py)
+* [fine-tune/](./fine-tune)
+  * [fine-tune.py/](./fine-tune/fine-tune.py)
+    * class ModelArguments : const model_name_or_path
+    * class DataArguments : const data_path
+    * class TrainingArguments ： const cache_dir、const optim、const model_max_length、 const use_lora、
+    * class SupervisedDataset
 * [web_demo.py/](./web_demo.py)
   * [ads_generation.md（分布式运行范例）](./examples/ads_generation.md)
 * [README.md](./README.md)
