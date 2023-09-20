@@ -38,6 +38,7 @@ Baichuan2代码的逐行解析版本，适合小白
 
 
 # CSDN彩色博客版：
+* [./Baichuan2-13B-Chat/modelling_baichuan.py](https://blog.csdn.net/sinat_37574187/article/details/133090157?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22133090157%22%2C%22source%22%3A%22sinat_37574187%22%7D)
 * [src/](./ChatGLM-Efficient-Tuning-Explained/src)
   * [CSDN彩色源码解析fine-tune/fine-tune.py (一)](https://blog.csdn.net/sinat_37574187/article/details/132783096?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22132783096%22%2C%22source%22%3A%22sinat_37574187%22%7D)
     * [common.py](./ChatGLM-Efficient-Tuning-Explained/src/utils/common.py)
