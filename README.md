@@ -14,6 +14,25 @@ Baichuan2代码的逐行解析版本，适合小白
 * [web_demo.py/](./web_demo.py)
   * [ads_generation.md（分布式运行范例）](./examples/ads_generation.md)
 * [./Baichuan2-13B-Chat/modelling_baichuan.py](./Baichuan2-Explained/Baichuan2-13B-Chat/modelling_baichuan.py)
+  * const logger
+  * func _get_interleave
+  * func _get_interleave_power_of_2
+  * func _fill_with_neg_inf
+  * func _buffered_future_mask
+  * func _gen_alibi_mask
+  * class RMSNorm
+    * func __init__
+    * func forward
+  * class MLP
+    * func __init__
+    * func __init__
+    * func _shape
+    * func forward
+  * class BaichuanLayer
+    * func __init__
+    * func forward
+  * class BaichuanPreTrainedModel
+
 * [README.md](./README.md)
 
 
