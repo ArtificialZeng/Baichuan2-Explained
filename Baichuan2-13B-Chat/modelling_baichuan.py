@@ -301,74 +301,76 @@ class BaichuanPreTrainedModel(PreTrainedModel):  # 定义一个名为 "BaichuanP
 
 
 
-class BaichuanModel(BaichuanPreTrainedModel):
-    def __init__(self, config: BaichuanConfig):
-        super().__init__(config)
-        self.padding_idx = config.pad_token_id
-        self.vocab_size = config.vocab_size
-        self.n_head = config.num_attention_heads
-        self.embed_tokens = torch.nn.Embedding(
-            config.vocab_size, config.hidden_size, self.padding_idx
+class BaichuanModel(BaichuanPreTrainedModel):  # 定义一个名为 "BaichuanModel" 的类，它继承了 "BaichuanPreTrainedModel" 类
+
+    def __init__(self, config: BaichuanConfig):  # 定义类的构造函数，接受一个名为 "config" 的参数，该参数是一个BaichuanConfig对象
+        super().__init__(config)  # 调用父类 (BaichuanPreTrainedModel) 的构造函数并传入config参数
+        self.padding_idx = config.pad_token_id  # 从config中获取pad_token_id并设置为类的属性
+        self.vocab_size = config.vocab_size  # 从config中获取词汇表的大小并设置为类的属性
+        self.n_head = config.num_attention_heads  # 从config中获取注意力头的数量并设置为类的属性
+        self.embed_tokens = torch.nn.Embedding(  # 创建一个嵌入层
+            config.vocab_size, config.hidden_size, self.padding_idx  # 指定词汇表大小、嵌入大小和填充索引
         )
-        self.layers = torch.nn.ModuleList(
-            [BaichuanLayer(config) for _ in range(config.num_hidden_layers)]
+        self.layers = torch.nn.ModuleList(  # 创建一个模块列表
+            [BaichuanLayer(config) for _ in range(config.num_hidden_layers)]  # 根据隐藏层的数量多次实例化BaichuanLayer模块
         )
-        self.norm = RMSNorm(config.hidden_size, epsilon=config.rms_norm_eps)
+        self.norm = RMSNorm(config.hidden_size, epsilon=config.rms_norm_eps)  # 创建一个RMSNorm正则化层
 
-        self.gradient_checkpointing = config.gradient_checkpointing
-        self.post_init()
-        self.max_cache_pos = config.model_max_length
-        self.first_run = True
-        self.alibi_mask = None
+        self.gradient_checkpointing = config.gradient_checkpointing  # 设置梯度检查点属性
+        self.post_init()  # 调用post_init方法，可能在父类中定义，用于进一步的初始化
+        self.max_cache_pos = config.model_max_length  # 设置模型的最大缓存位置
+        self.first_run = True  # 设置一个标志，表示模型是否是第一次运行
+        self.alibi_mask = None  # 初始化一个alibi_mask属性，值为None
 
-    def get_input_embeddings(self):
-        return self.embed_tokens
+    def get_input_embeddings(self):  # 定义一个方法用于获取输入的嵌入
+        return self.embed_tokens  # 返回嵌入层
 
-    def set_input_embeddings(self, value):
-        self.embed_tokens = value
+    def set_input_embeddings(self, value):  # 定义一个方法用于设置输入的嵌入
+        self.embed_tokens = value  # 将传入的嵌入赋值给嵌入层属性
 
-    def get_alibi_mask(self, tensor, seq_length_with_past):
-        if self.training:
-            slopes = torch.Tensor(_get_interleave(self.n_head))
+    def get_alibi_mask(self, tensor, seq_length_with_past):  # 定义一个方法用于获取alibi mask
+        if self.training:  # 如果模型处于训练模式
+            slopes = torch.Tensor(_get_interleave(self.n_head))  # 获取交错值
             position_point = (
-                torch.arange(seq_length_with_past) - seq_length_with_past + 1
+                torch.arange(seq_length_with_past) - seq_length_with_past + 1  # 计算位置点
             )
             position_point = (
                 position_point.unsqueeze(0)
                 .unsqueeze(0)
-                .expand(self.n_head, seq_length_with_past, -1)
+                .expand(self.n_head, seq_length_with_past, -1)  # 调整位置点的形状并扩展
             )
-            diag = torch.diag(position_point[0])
+            diag = torch.diag(position_point[0])  # 获取对角线
             position_point = position_point - diag.unsqueeze(0).unsqueeze(0).transpose(
                 -1, -2
-            )
-            alibi = slopes.unsqueeze(1).unsqueeze(1) * position_point
-            mask = _buffered_future_mask(
+            )  # 调整位置点的形状
+            alibi = slopes.unsqueeze(1).unsqueeze(1) * position_point  # 计算alibi值
+            mask = _buffered_future_mask(  # 获取未来的mask
                 tensor, seq_length_with_past, alibi, self.n_head
             )
-        else:
-            if self.first_run:
-                self.first_run = False
-                self.register_buffer(
+        else:  # 如果模型处于评估模式
+            if self.first_run:  # 如果是第一次运行
+                self.first_run = False  # 设置标志为False
+                self.register_buffer(  # 注册一个缓冲区
                     "future_mask",
                     _gen_alibi_mask(tensor, self.n_head, self.max_cache_pos).to(
                         tensor
                     ),
-                    persistent=False,
+                    persistent=False,  # 使缓冲区不持久
                 )
-            if seq_length_with_past > self.max_cache_pos:
-                self.max_cache_pos = seq_length_with_past
-                self.register_buffer(
+            if seq_length_with_past > self.max_cache_pos:  # 如果当前序列长度超过最大缓存位置
+                self.max_cache_pos = seq_length_with_past  # 更新最大缓存位置
+                self.register_buffer(  # 再次注册一个缓冲区
                     "future_mask",
                     _gen_alibi_mask(tensor, self.n_head, self.max_cache_pos).to(
                         tensor
                     ),
-                    persistent=False,
+                    persistent=False,  # 使缓冲区不持久
                 )
             mask = self.future_mask[
                 : self.n_head, :seq_length_with_past, :seq_length_with_past
-            ]
-        return mask
+            ]  # 获取未来的mask
+        return mask  # 返回mask
+
 
     def forward(
         self,
