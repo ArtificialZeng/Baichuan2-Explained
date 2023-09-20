@@ -216,80 +216,89 @@ class BaichuanAttention(torch.nn.Module):
 
             
 
-class BaichuanLayer(torch.nn.Module):
-    def __init__(self, config: BaichuanConfig):
-        super().__init__()
-        self.hidden_size = config.hidden_size
-        self.self_attn = BaichuanAttention(config=config)
-        self.mlp = MLP(
-            hidden_size=self.hidden_size,
-            intermediate_size=config.intermediate_size,
-            hidden_act=config.hidden_act,
+class BaichuanLayer(torch.nn.Module):  # 定义一个名为 "BaichuanLayer" 的 PyTorch 模型类，它继承了torch.nn.Module
+
+    def __init__(self, config: BaichuanConfig):  # 构造函数接收一个名为config的BaichuanConfig类型参数
+        super().__init__()  # 调用父类(torch.nn.Module)的初始化方法
+        self.hidden_size = config.hidden_size  # 从config中提取hidden_size并赋值给类变量self.hidden_size
+        self.self_attn = BaichuanAttention(config=config)  # 用config初始化BaichuanAttention对象，并赋值给self.self_attn
+        self.mlp = MLP(  # 初始化一个MLP对象，并赋值给self.mlp
+            hidden_size=self.hidden_size,  # MLP的hidden_size参数等于我们之前设置的self.hidden_size
+            intermediate_size=config.intermediate_size,  # 从config中提取intermediate_size作为MLP的参数
+            hidden_act=config.hidden_act,  # 从config中提取hidden_act作为MLP的参数
         )
-        self.input_layernorm = RMSNorm(config.hidden_size, epsilon=config.rms_norm_eps)
-        self.post_attention_layernorm = RMSNorm(
+        self.input_layernorm = RMSNorm(config.hidden_size, epsilon=config.rms_norm_eps)  # 初始化一个RMSNorm对象，并赋值给self.input_layernorm
+        self.post_attention_layernorm = RMSNorm(  # 初始化另一个RMSNorm对象，并赋值给self.post_attention_layernorm
             config.hidden_size, epsilon=config.rms_norm_eps
         )
 
-    def forward(
+    def forward(  # 定义前向传播函数
         self,
-        hidden_states: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        past_key_value: Optional[Tuple[torch.Tensor]] = None,
-        output_attentions: Optional[bool] = False,
-        use_cache: Optional[bool] = False,
-    ) -> Tuple[
+        hidden_states: torch.Tensor,  # 输入参数为一个tensor，代表隐藏状态
+        attention_mask: Optional[torch.Tensor] = None,  # 可选的attention_mask参数，默认为None
+        past_key_value: Optional[Tuple[torch.Tensor]] = None,  # 可选的past_key_value参数，默认为None
+        output_attentions: Optional[bool] = False,  # 可选的output_attentions参数，默认为False
+        use_cache: Optional[bool] = False,  # 可选的use_cache参数，默认为False
+    ) -> Tuple[  # 函数的返回类型为一个Tuple
         torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]
     ]:
-        residual = hidden_states
+        residual = hidden_states  # 将输入的hidden_states保存为residual以便后面使用
 
-        hidden_states = self.input_layernorm(hidden_states)
+        hidden_states = self.input_layernorm(hidden_states)  # 将hidden_states通过self.input_layernorm进行处理
 
-        # Self Attention
-        hidden_states, self_attn_weights, present_key_value = self.self_attn(
+        # Self Attention部分
+        hidden_states, self_attn_weights, present_key_value = self.self_attn(  # 使用self.self_attn处理hidden_states，并返回三个结果
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             past_key_value=past_key_value,
             output_attentions=output_attentions,
             use_cache=use_cache,
         )
-        hidden_states = residual + hidden_states
+        hidden_states = residual + hidden_states  # 将处理后的hidden_states与原始的residual进行加和，实现residual connection
 
-        # Fully Connected
-        residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states)
-        hidden_states = self.mlp(hidden_states)
-        hidden_states = residual + hidden_states
+        # Fully Connected部分
+        residual = hidden_states  # 更新residual为处理后的hidden_states
+        hidden_states = self.post_attention_layernorm(hidden_states)  # 将hidden_states通过self.post_attention_layernorm进行处理
+        hidden_states = self.mlp(hidden_states)  # 将hidden_states通过self.mlp进行处理
+        hidden_states = residual + hidden_states  # 再次使用residual connection
 
-        outputs = (hidden_states,)
+        outputs = (hidden_states,)  # 将处理后的hidden_states放入outputs tuple中
 
-        if use_cache:
-            outputs += (present_key_value,)
+        if use_cache:  # 如果use_cache为True
+            outputs += (present_key_value,)  # 将present_key_value也加入到outputs tuple中
 
-        return outputs
+        return outputs  # 返回outputs tuple
 
 
-class BaichuanPreTrainedModel(PreTrainedModel):
-    config_class = BaichuanConfig
-    base_model_prefix = "model"
-    supports_gradient_checkpointing = True
-    _no_split_modules = ["BaichuanLayer"]
-    _keys_to_ignore_on_load_unexpected = [r"decoder\.version"]
 
-    def _init_weights(self, module):
-        std = self.config.initializer_range
-        if isinstance(module, torch.nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=std)
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, torch.nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=std)
-            if module.padding_idx is not None:
-                module.weight.data[module.padding_idx].zero_()
+class BaichuanPreTrainedModel(PreTrainedModel):  # 定义一个名为 "BaichuanPreTrainedModel" 的类，继承了 "PreTrainedModel" 类
+    config_class = BaichuanConfig  # 定义一个类属性，将BaichuanConfig赋值给config_class，用于指定该模型的配置类是什么
 
-    def _set_gradient_checkpointing(self, module, value=False):
-        if isinstance(module, BaichuanModel):
-            module.gradient_checkpointing = value
+    base_model_prefix = "model"  # 定义一个类属性，其值是字符串 "model"，通常用于标识模型的主要子模块或基础模型
+
+    supports_gradient_checkpointing = True  # 定义一个类属性，标识该模型支持梯度检查点功能，可以节省显存但会使计算稍慢
+
+    _no_split_modules = ["BaichuanLayer"]  # 定义一个类属性，包含模型内不应该被拆分为子模型的模块名称
+
+    _keys_to_ignore_on_load_unexpected = [r"decoder\.version"]  # 定义一个类属性，列出在加载模型时应该忽略的意外键名
+
+    def _init_weights(self, module):  # 定义一个方法用于初始化模型权重
+        std = self.config.initializer_range  # 从模型的配置中获取权重初始化的标准差
+        
+        if isinstance(module, torch.nn.Linear):  # 如果传入的模块是线性层
+            module.weight.data.normal_(mean=0.0, std=std)  # 使用正态分布初始化线性层的权重，均值为0，标准差为std
+            if module.bias is not None:  # 如果线性层有偏置
+                module.bias.data.zero_()  # 使用0来初始化偏置
+
+        elif isinstance(module, torch.nn.Embedding):  # 如果传入的模块是嵌入层
+            module.weight.data.normal_(mean=0.0, std=std)  # 使用正态分布初始化嵌入层的权重，均值为0，标准差为std
+            if module.padding_idx is not None:  # 如果嵌入层有填充索引
+                module.weight.data[module.padding_idx].zero_()  # 将填充索引对应的嵌入向量初始化为0
+
+    def _set_gradient_checkpointing(self, module, value=False):  # 定义一个方法用于设置模块的梯度检查点
+        if isinstance(module, BaichuanModel):  # 如果传入的模块是BaichuanModel类型
+            module.gradient_checkpointing = value  # 设置模块的梯度检查点属性为给定的value值
+
 
 
 class BaichuanModel(BaichuanPreTrainedModel):
