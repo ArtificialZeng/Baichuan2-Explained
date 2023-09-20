@@ -13,6 +13,7 @@ Baichuan2代码的逐行解析版本，适合小白
   * func train 
 * [web_demo.py/](./web_demo.py)
   * [ads_generation.md（分布式运行范例）](./examples/ads_generation.md)
+* [./Baichuan2-13B-Chat/modelling_baichuan.py](./Baichuan2-Explained/Baichuan2-13B-Chat/modelling_baichuan.py)
 * [README.md](./README.md)
 
 
